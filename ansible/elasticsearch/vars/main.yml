@@ -1,0 +1,6 @@
+elasticsearch_repo_key_url_ubuntu: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+elasticsearch_repo_key_url_centos: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+
+elasticsearch_repo_ubuntu: "deb https://artifacts.elastic.co/packages/{{ elasticsearch_version.split('.')[0] }}.x/apt stable main"
+elasticsearch_repo_centos: "https://artifacts.elastic.co/packages/{{ elasticsearch_version.split('.')[0] }}.x/yum"
+

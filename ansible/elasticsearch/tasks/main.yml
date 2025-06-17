@@ -1,0 +1,68 @@
+- name: Ensure Java is installed (Ubuntu)
+  apt:
+    name: openjdk-11-jre-headless
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure Java is installed (CentOS/RHEL)
+  yum:
+    name: java-11-openjdk
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Add Elasticsearch GPG key (Ubuntu)
+  apt_key:
+    url: "{{ elasticsearch_repo_key_url_ubuntu }}"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Elasticsearch GPG key (CentOS/RHEL)
+  rpm_key:
+    state: present
+    key: "{{ elasticsearch_repo_key_url_centos }}"
+  when: ansible_os_family == "RedHat"
+
+- name: Add Elasticsearch repository (Ubuntu)
+  apt_repository:
+    repo: "{{ elasticsearch_repo_ubuntu }}"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Elasticsearch repository (CentOS/RHEL)
+  yum_repository:
+    name: elasticsearch
+    description: "Elasticsearch repository"
+    baseurl: "{{ elasticsearch_repo_centos }}"
+    gpgcheck: yes
+    gpgkey: "{{ elasticsearch_repo_key_url_centos }}"
+    enabled: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Install Elasticsearch (Ubuntu)
+  apt:
+    name: "elasticsearch={{ elasticsearch_version }}"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install Elasticsearch (CentOS/RHEL)
+  yum:
+    name: "elasticsearch-{{ elasticsearch_version }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Deploy Elasticsearch config from template
+  template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+    owner: root
+    group: elasticsearch
+    mode: 0640
+  notify: restart elasticsearch
+
+- name: Ensure Elasticsearch is enabled and started
+  service:
+    name: elasticsearch
+    state: started
+    enabled: yes
+

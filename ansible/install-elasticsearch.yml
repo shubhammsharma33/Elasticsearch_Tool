@@ -1,0 +1,14 @@
+- name: Install Elasticsearch using role
+  hosts: elasticsearch_nodes
+  become: yes
+  roles:
+    - role: elasticsearch
+      vars:
+        elasticsearch_version: "8.13.4"
+        elasticsearch_config:
+          cluster_name: "prod-es"
+          node_name: "{{ inventory_hostname }}"
+          network_host: "0.0.0.0"
+          http_port: 9200
+          discovery_type: "single-node"
+

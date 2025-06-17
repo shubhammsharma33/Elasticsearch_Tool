@@ -1,0 +1,4 @@
+[elasticsearch_nodes]
+43.205.203.137 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/my-ec2-key.pem
+13.232.166.242 ansible_user=centos ansible_ssh_private_key_file=~/.ssh/my-ec2-key.pem
+
