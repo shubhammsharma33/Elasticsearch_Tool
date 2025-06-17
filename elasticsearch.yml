@@ -1,0 +1,105 @@
+- name: Install Elasticsearch on Ubuntu
+  hosts: elasticsearch
+  become: yes
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: ['apt-transport-https', 'openjdk-11-jre-headless', 'wget']
+        state: present
+        update_cache: yes
+
+    - name: Add Elasticsearch GPG key
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add Elasticsearch repository
+      apt_repository:
+        repo: 'deb https://artifacts.elastic.co/packages/7.x/apt stable main'
+        state: present
+
+    - name: Install Elasticsearch
+      apt:
+        name: elasticsearch
+        state: present
+        update_cache: yes
+
+    - name: Enable and start Elasticsearch
+      systemd:
+        name: elasticsearch
+        enabled: yes
+        state: started
+apt:
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+- name: Install Java (Debian)
+  apt:
+    name: openjdk-11-jdk
+    state: present
+  when: ansible_os_family == 'Debian'
+- name: Install Java on Amazon Linux 2023
+  when: ansible_distribution == "Amazon" and ansible_distribution_major_version == "2023"
+  package:
+    name: java-17-amazon-corretto
+    state: present
+- name: Import Elasticsearch GPG key (Debian/Ubuntu)
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  when: ansible_os_family == "Debian"
+- name: Add Elasticsearch apt repo
+  apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/{{ es_version }}/apt stable main"
+    state: present
+    filename: elastic-{{ es_version }}
+  when: ansible_os_family == 'Debian'
+- name: Install Elasticsearch
+  package:
+    name: elasticsearch
+    state: present
+- name: Deploy elasticsearch.yml template
+  template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+    owner: root
+    group: root
+    mode: '0644'
+- name: Remove unsupported setting 'xpack.security.enrollment.enabled' from elasticsearch.yml
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '^xpack\.security\.enrollment\.enabled:'
+    state: absent
+  become: true
+- name: Reload systemd daemon
+  command: systemctl daemon-reexec
+  become: true
+- import_tasks: remove_invalid_settings.yml
+- name: Enable Elasticsearch service
+  systemd:
+    name: elasticsearch
+    enabled: yes
+  become: true
+- name: Start Elasticsearch service
+  systemd:
+    name: elasticsearch
+    state: started
+  become: true
+- name: Get systemctl status of Elasticsearch
+  command: systemctl status elasticsearch
+  register: es_status
+  changed_when: false
+  failed_when: false
+- name: Debug systemd status
+  command: journalctl -xeu elasticsearch.service
+  register: elastic_journal
+  changed_when: false
+  failed_when: false
+  when: es_status.rc != 0
+- name: Show Elasticsearch systemd journal
+  debug:
+    msg: "{{ elastic_journal.stdout_lines }}"
+  when: es_status.rc != 0
+- name: Show Elasticsearch systemctl status
+  debug:
+    msg: "{{ es_status.stdout_lines }}"
+  when: es_status.rc != 0
